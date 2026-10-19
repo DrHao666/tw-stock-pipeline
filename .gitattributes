@@ -1,0 +1,2 @@
+# 讓 .sh 腳本在 Windows clone 下來時仍保持 LF 換行，否則 container 裡的 bash 會執行失敗
+*.sh text eol=lf
