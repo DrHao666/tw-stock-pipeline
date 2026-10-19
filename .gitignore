@@ -26,3 +26,6 @@ pgdata/
 .idea/
 .DS_Store
 Thumbs.db
+
+# dbt 自動產生的匿名使用者 ID
+dbt/.user.yml
