@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: stg_twse_quotes
+    description: 上市股票每日收盤行情，一天一檔一列；價格欄位沒成交時為 NULL
+    data_tests:
+      - unique:
+          column_name: "trade_date || '-' || stock_id"
+    columns:
+      - name: trade_date
+        data_tests: [not_null]
+      - name: stock_id
+        data_tests: [not_null]
+      - name: volume_shares
+        data_tests: [not_null]
+      - name: close_price
+        description: 收盤價；當天沒成交為 NULL
