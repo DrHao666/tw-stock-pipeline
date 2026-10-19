@@ -28,3 +28,15 @@ models:
         data_tests: [not_null]
       - name: volume_shares
         data_tests: [not_null]
+
+  - name: stg_daily_quotes
+    description: 上市與上櫃每日收盤行情合併，一天一檔一列；market 標示 TWSE 或 TPEx
+    data_tests:
+      - unique:
+          column_name: "trade_date || '-' || stock_id"
+    columns:
+      - name: market
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['TWSE', 'TPEx']
