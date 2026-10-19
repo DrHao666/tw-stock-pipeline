@@ -1,0 +1,28 @@
+# 機密：真正的帳密只放在 .env，不進版控
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Airflow 執行時產生的檔案
+logs/
+airflow.db
+airflow-webserver.pid
+
+# dbt 編譯產物與安裝的套件
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# 本機資料庫資料（如果改用 bind mount）
+pgdata/
+
+# 編輯器與作業系統
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
