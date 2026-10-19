@@ -5,46 +5,25 @@
 """
 import json
 import logging
-import os
 import sys
-import time
 from datetime import date, datetime
-from pathlib import Path
 
-import psycopg2
 import requests
-from dotenv import load_dotenv
+
+from ingestion.common import get_connection, get_json_with_retry, run_sql_file
 
 logger = logging.getLogger(__name__)
 
 MI_INDEX_URL = "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX"
-DDL_PATH = Path(__file__).resolve().parent.parent / "sql" / "raw" / "001_create_raw_twse.sql"
-MAX_RETRIES = 3
-TIMEOUT_SECONDS = 30
 
 
 def fetch_mi_index(trade_date: date, session: requests.Session | None = None) -> dict:
-    """打 MI_INDEX 取得某一天全市場行情，失敗時以 exponential backoff 重試（2、4、8 秒）。
+    """打 MI_INDEX 取得某一天全市場行情。
 
     休市日證交所仍回 200，只是 stat 不是 'OK'；這裡不把它當錯誤，交給呼叫端判斷。
     """
-    session = session or requests.Session()
     params = {"date": trade_date.strftime("%Y%m%d"), "type": "ALLBUT0999", "response": "json"}
-
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            resp = session.get(MI_INDEX_URL, params=params, timeout=TIMEOUT_SECONDS)
-            resp.raise_for_status()
-            payload = resp.json()  # 被擋時會回 HTML，這裡會丟 ValueError，一樣進入重試
-            if "stat" not in payload:
-                raise ValueError(f"回應缺少 stat 欄位：{str(payload)[:200]}")
-            return payload
-        except (requests.RequestException, ValueError) as exc:
-            if attempt == MAX_RETRIES:
-                raise
-            wait = 2 ** attempt
-            logger.warning("第 %d 次抓取 %s 失敗：%s，%d 秒後重試", attempt, trade_date, exc, wait)
-            time.sleep(wait)
+    return get_json_with_retry(MI_INDEX_URL, params, session)
 
 
 def find_quotes_table(payload: dict) -> dict | None:
@@ -53,25 +32,6 @@ def find_quotes_table(payload: dict) -> dict | None:
         if "每日收盤行情" in (table.get("title") or ""):
             return table
     return None
-
-
-def get_connection():
-    """連到 warehouse DB。本機跑時從 .env 讀帳密，連 localhost 的對外 port。"""
-    load_dotenv()
-    return psycopg2.connect(
-        host=os.getenv("WAREHOUSE_HOST", "localhost"),
-        port=os.getenv("WAREHOUSE_PORT", os.getenv("POSTGRES_HOST_PORT", "5433")),
-        dbname=os.getenv("WAREHOUSE_DB", "warehouse"),
-        user=os.getenv("POSTGRES_USER", "postgres"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-    )
-
-
-def ensure_schema(conn) -> None:
-    """建立 raw schema 與表（IF NOT EXISTS，重跑無副作用）。"""
-    with conn.cursor() as cur:
-        cur.execute(DDL_PATH.read_text(encoding="utf-8"))
-    conn.commit()
 
 
 def save_raw(conn, trade_date: date, payload: dict) -> None:
@@ -92,7 +52,7 @@ def save_raw(conn, trade_date: date, payload: dict) -> None:
 def ingest(trade_date: date) -> None:
     payload = fetch_mi_index(trade_date)
     with get_connection() as conn:
-        ensure_schema(conn)
+        run_sql_file(conn, "raw/001_create_raw_twse.sql")
         save_raw(conn, trade_date, payload)
 
     if payload["stat"] != "OK":
