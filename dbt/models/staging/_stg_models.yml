@@ -40,3 +40,11 @@ models:
           - accepted_values:
               arguments:
                 values: ['TWSE', 'TPEx']
+
+  - name: stg_trading_calendar
+    description: 每個已抓取日期是否開市；raw 沒有的日期不在表中（代表尚未抓取）
+    columns:
+      - name: trade_date
+        data_tests: [unique, not_null]
+      - name: is_trading_day
+        data_tests: [not_null]
