@@ -1,0 +1,14 @@
+name: tw_stock
+version: "1.0.0"
+config-version: 2
+profile: tw_stock
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+models:
+  tw_stock:
+    staging:
+      +schema: staging
+      +materialized: view

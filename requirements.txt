@@ -1,4 +1,6 @@
 # ingestion 本機執行用；Airflow container 內的套件之後另外處理
 requests==2.32.3
 psycopg2-binary==2.9.11
-python-dotenv==1.0.1
+python-dotenv==1.2.1
+dbt-core==1.12.6
+dbt-postgres==1.11.0

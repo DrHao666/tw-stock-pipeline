@@ -1,0 +1,14 @@
+# 連線設定：帳密一律從環境變數讀，不寫在檔案裡
+# 本機執行時由 scripts/run_dbt.py 先載入 .env
+tw_stock:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('WAREHOUSE_HOST', 'localhost') }}"
+      port: "{{ env_var('WAREHOUSE_PORT', env_var('POSTGRES_HOST_PORT', '5433')) | int }}"
+      user: "{{ env_var('POSTGRES_USER') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('WAREHOUSE_DB', 'warehouse') }}"
+      schema: public
+      threads: 4

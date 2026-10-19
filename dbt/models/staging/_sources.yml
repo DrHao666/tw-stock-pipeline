@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: raw
+    description: ingestion/ 抓下來的原始回應，原封不動保存
+    schema: raw
+    tables:
+      - name: twse_mi_index
+        description: 證交所（上市）MI_INDEX 每日回應，每個日期一筆，休市日 stat 不是 'OK'
+        columns:
+          - name: trade_date
+            tests: [unique, not_null]
+      - name: tpex_otc_quotes
+        description: 櫃買中心（上櫃）每日收盤行情回應，每個日期一筆，休市日 data 為空陣列
+        columns:
+          - name: trade_date
+            tests: [unique, not_null]
