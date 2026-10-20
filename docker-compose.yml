@@ -3,7 +3,11 @@
 
 # 三個 Airflow service 共用的設定，用 YAML anchor 避免重複
 x-airflow-common: &airflow-common
-  image: apache/airflow:2.10.5
+  # 以官方 image 為底，另外裝好 ingestion 與 dbt 的 venv（見 docker/airflow/Dockerfile）
+  build:
+    context: .
+    dockerfile: docker/airflow/Dockerfile
+  image: tw-stock-airflow:2.10.5
   user: "${AIRFLOW_UID:-50000}:0"
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -16,10 +20,21 @@ x-airflow-common: &airflow-common
     AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE: Asia/Taipei
     # 讓 DAG 用 conn_id="warehouse" 連到股票資料庫
     AIRFLOW_CONN_WAREHOUSE: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${WAREHOUSE_DB}
+    # ingestion 與 dbt 讀這組變數連 warehouse；容器內直接連 postgres service 的 5432
+    WAREHOUSE_HOST: postgres
+    WAREHOUSE_PORT: "5432"
+    WAREHOUSE_DB: ${WAREHOUSE_DB}
+    POSTGRES_USER: ${POSTGRES_USER}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    DBT_SEND_ANONYMOUS_USAGE_STATS: "false"
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./config:/opt/airflow/config
+    # 專案程式碼掛進容器，DAG 在 /opt/airflow/project 底下執行
+    - ./ingestion:/opt/airflow/project/ingestion
+    - ./sql:/opt/airflow/project/sql
+    - ./dbt:/opt/airflow/project/dbt
   depends_on:
     postgres:
       condition: service_healthy
