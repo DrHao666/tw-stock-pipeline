@@ -48,3 +48,30 @@ models:
         data_tests: [unique, not_null]
       - name: is_trading_day
         data_tests: [not_null]
+
+  - name: stg_price_adjustments
+    description: 除權息與減資事件，一列一個事件；factor = 參考價 / 事件前收盤價
+    data_tests:
+      - unique:
+          column_name: "event_date || '-' || stock_id || '-' || event_type"
+    columns:
+      - name: event_date
+        data_tests: [not_null]
+      - name: stock_id
+        data_tests: [not_null]
+      - name: event_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['ex_rights', 'capital_reduction']
+      - name: factor
+        data_tests: [not_null]
+
+  - name: stg_daily_quotes_adjusted
+    description: 向後還原的每日行情；原始價與還原價並存，adj_factor 為該日適用的累積係數
+    data_tests:
+      - unique:
+          column_name: "trade_date || '-' || stock_id"
+    columns:
+      - name: adj_factor
+        data_tests: [not_null]

@@ -15,3 +15,23 @@ sources:
         columns:
           - name: trade_date
             tests: [unique, not_null]
+      - name: twse_ex_rights
+        description: 證交所 TWT49U 除權除息計算結果表，每月一筆
+        columns:
+          - name: period_start
+            tests: [unique, not_null]
+      - name: twse_capital_reduction
+        description: 證交所 TWTAUU 減資恢復買賣參考價，每月一筆；當月沒有減資時 stat 不是 'OK'
+        columns:
+          - name: period_start
+            tests: [unique, not_null]
+      - name: tpex_ex_rights
+        description: 櫃買中心 exDailyQ 除權除息計算結果表，每月一筆
+        columns:
+          - name: period_start
+            tests: [unique, not_null]
+      - name: tpex_capital_reduction
+        description: 櫃買中心 revivt 減資恢復買賣參考價，每月一筆
+        columns:
+          - name: period_start
+            tests: [unique, not_null]
