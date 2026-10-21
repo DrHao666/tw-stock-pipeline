@@ -75,3 +75,21 @@ models:
     columns:
       - name: adj_factor
         data_tests: [not_null]
+
+  - name: stg_institutional_trades
+    description: 上市、上櫃三大法人買賣超，一天一檔一列，單位為股；net 欄位正數為買超、負數為賣超
+    data_tests:
+      - unique:
+          column_name: "trade_date || '-' || stock_id"
+    columns:
+      - name: trade_date
+        data_tests: [not_null]
+      - name: stock_id
+        data_tests: [not_null]
+      - name: total_net
+        data_tests: [not_null]
+      - name: market
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['TWSE', 'TPEx']

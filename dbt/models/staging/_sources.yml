@@ -35,3 +35,13 @@ sources:
         columns:
           - name: period_start
             tests: [unique, not_null]
+      - name: twse_t86
+        description: 證交所 T86 三大法人買賣超日報，每個日期一筆；休市日 stat 不是 'OK'、沒有 data
+        columns:
+          - name: trade_date
+            tests: [unique, not_null]
+      - name: tpex_insti_daily
+        description: 櫃買中心三大法人日交易資訊，每個日期一筆；休市日 data 為空陣列
+        columns:
+          - name: trade_date
+            tests: [unique, not_null]
