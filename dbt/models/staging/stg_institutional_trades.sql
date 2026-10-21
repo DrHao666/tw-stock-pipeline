@@ -11,20 +11,28 @@
     indexes=[{'columns': ['trade_date']}]
 ) }}
 
-with twse_records as (
+with twse_days as (
+    select trade_date, fetched_at, payload -> 'fields' as fields, payload -> 'data' as data
+    from {{ source('raw', 'twse_t86') }}
+    -- 休市日沒有 data
+    where payload ? 'data'
+    {% if is_incremental() %}
+      and fetched_at > (select coalesce(max(fetched_at), '-infinity') from {{ this }} where market = 'TWSE')
+    {% endif %}
+),
+
+-- materialized：讓每列的 rec 只組一次。不加的話 Postgres 會把 CTE 展開，
+-- 下面每個 rec ->> '欄位' 都重跑一次 jsonb_object_agg（約 36 次／列），實測慢 30 倍
+twse_records as materialized (
     select
-        r.trade_date,
-        r.fetched_at,
+        t.trade_date,
+        t.fetched_at,
         (
             select jsonb_object_agg(regexp_replace(f.name, '\s', '', 'g'), d.row_values -> (f.pos - 1)::int)
-            from jsonb_array_elements_text(r.payload -> 'fields') with ordinality as f(name, pos)
+            from jsonb_array_elements_text(t.fields) with ordinality as f(name, pos)
         ) as rec
-    from {{ source('raw', 'twse_t86') }} r
-    -- 休市日沒有 data，攤開後自然沒有資料列
-    cross join lateral jsonb_array_elements(coalesce(r.payload -> 'data', '[]'::jsonb)) as d(row_values)
-    {% if is_incremental() %}
-    where r.fetched_at > (select coalesce(max(fetched_at), '-infinity') from {{ this }} where market = 'TWSE')
-    {% endif %}
+    from twse_days t
+    cross join lateral jsonb_array_elements(t.data) as d(row_values)
 ),
 
 twse as (

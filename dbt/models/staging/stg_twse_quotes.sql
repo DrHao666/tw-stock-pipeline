@@ -28,7 +28,8 @@ quote_tables as (
 ),
 
 -- 每一列 data 是陣列；把 fields 和值配對成 {"證券代號": "2330", ...}，之後用欄位名稱取值
-records as (
+-- materialized：讓每列的 rec 只組一次；不加的話 CTE 會被展開，每個 rec ->> 欄位都重跑一次 jsonb_object_agg
+records as materialized (
     select
         q.trade_date,
         q.fetched_at,

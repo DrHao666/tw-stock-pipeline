@@ -21,7 +21,8 @@ with quote_tables as (
 
 -- 欄位名稱夾著空白與 <br>（例如 '收盤 '、'最後買量<br>(張數)'），先正規化再和值配對。
 -- 2010 年只有 15 欄、2026 年有 17 欄，用名稱取值就不受欄位數與順序影響
-records as (
+-- materialized：讓每列的 rec 只組一次；不加的話 CTE 會被展開，每個 rec ->> 欄位都重跑一次 jsonb_object_agg
+records as materialized (
     select
         q.trade_date,
         q.fetched_at,
