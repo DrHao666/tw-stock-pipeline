@@ -1,4 +1,4 @@
-"""回補一段期間的上市、上櫃 raw 資料（每日行情、三大法人），可中斷後重跑續抓。
+"""回補一段期間的上市、上櫃 raw 資料（每日行情、三大法人、融資融券），可中斷後重跑續抓。
 
 每個日曆日（含週末、假日）每個來源各抓一次，休市也記一筆，交易日曆才不會有缺口。
 已在 raw 表裡的日期直接跳過；抓失敗的日期不寫入，下次重跑會自動補。
@@ -11,7 +11,7 @@ import sys
 import time
 from datetime import date, datetime, timedelta
 
-from ingestion import institutional, tpex, twse
+from ingestion import institutional, margin, tpex, twse
 from ingestion.common import get_connection, run_sql_file
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,10 @@ SOURCES = {
                    "ddl": "raw/004_create_raw_institutional.sql"},
     "TPEx_INSTI": {"ingest": institutional.ingest_tpex, "table": "raw.tpex_insti_daily",
                    "ddl": "raw/004_create_raw_institutional.sql"},
+    "TWSE_MARGIN": {"ingest": margin.ingest_twse, "table": "raw.twse_mi_margn",
+                    "ddl": "raw/005_create_raw_margin.sql"},
+    "TPEx_MARGIN": {"ingest": margin.ingest_tpex, "table": "raw.tpex_margin_balance",
+                    "ddl": "raw/005_create_raw_margin.sql"},
 }
 
 
