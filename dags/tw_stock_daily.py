@@ -1,4 +1,4 @@
-"""每日收盤後抓取上市、上櫃行情、三大法人買賣超與除權息／減資資料，寫入 raw，再用 dbt 轉換與測試。
+"""每日收盤後抓取上市、上櫃行情、三大法人買賣超、融資融券與除權息／減資資料，寫入 raw，再用 dbt 轉換與測試。
 
 - 每天台北時間 18:00 執行，週末、假日也跑：休市日照樣記一筆，交易日曆才不會有缺口。
 - 抓哪一天由 Airflow 的 data interval 決定，不是「今天」；要補某一天，在 UI 重跑那一次即可。
@@ -56,6 +56,18 @@ with DAG(
         cwd=PROJECT_DIR,
     )
 
+    fetch_twse_margin = BashOperator(
+        task_id="fetch_twse_margin",
+        bash_command=f"{VENV_BIN}/python -m ingestion.margin twse {TRADE_DATE}",
+        cwd=PROJECT_DIR,
+    )
+
+    fetch_tpex_margin = BashOperator(
+        task_id="fetch_tpex_margin",
+        bash_command=f"{VENV_BIN}/python -m ingestion.margin tpex {TRADE_DATE}",
+        cwd=PROJECT_DIR,
+    )
+
     # 當月的除權息與減資公告會陸續增加，每天重抓當月
     fetch_corporate_actions = BashOperator(
         task_id="fetch_corporate_actions",
@@ -79,5 +91,7 @@ with DAG(
         fetch_tpex,
         fetch_twse_institutional,
         fetch_tpex_institutional,
+        fetch_twse_margin,
+        fetch_tpex_margin,
         fetch_corporate_actions,
     ] >> dbt_build

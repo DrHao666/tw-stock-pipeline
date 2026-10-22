@@ -45,3 +45,13 @@ sources:
         columns:
           - name: trade_date
             tests: [unique, not_null]
+      - name: twse_mi_margn
+        description: 證交所 MI_MARGN 融資融券餘額，每個日期一筆；休市日 stat 不是 'OK'、沒有 tables
+        columns:
+          - name: trade_date
+            tests: [unique, not_null]
+      - name: tpex_margin_balance
+        description: 櫃買中心融資融券餘額，每個日期一筆；休市日 data 為空陣列
+        columns:
+          - name: trade_date
+            tests: [unique, not_null]
