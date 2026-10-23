@@ -24,6 +24,8 @@ TDCC_OPEN_DATA_URL = "https://opendata.tdcc.com.tw/getOD.ashx"
 TDCC_DATASET_ID = "1-5"
 EXPECTED_FIELDS = ["資料日期", "證券代號", "持股分級", "人數", "股數", "占集保庫存數比例%"]
 DDL = "raw/006_create_raw_shareholding.sql"
+# 集保會擋 python-requests 預設的 User-Agent（302 轉址到首頁、無限循環），要帶瀏覽器的 UA
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"}
 
 
 def fetch() -> dict:
@@ -33,7 +35,8 @@ def fetch() -> dict:
     """
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            resp = requests.get(TDCC_OPEN_DATA_URL, params={"id": TDCC_DATASET_ID}, timeout=TIMEOUT_SECONDS)
+            resp = requests.get(TDCC_OPEN_DATA_URL, params={"id": TDCC_DATASET_ID},
+                                headers=HEADERS, timeout=TIMEOUT_SECONDS)
             resp.raise_for_status()
             rows = list(csv.reader(io.StringIO(resp.content.decode("utf-8-sig"))))
             fields, data = rows[0], [row for row in rows[1:] if row]
@@ -73,10 +76,12 @@ def save_raw(conn, week: date, payload: dict) -> None:
 
 
 def ingest() -> None:
+    # 先建表：就算這次下載失敗，dbt 的 source 測試也不會因為表不存在而報錯
+    with get_connection() as conn:
+        run_sql_file(conn, DDL)
     payload = fetch()
     week = data_date(payload)
     with get_connection() as conn:
-        run_sql_file(conn, DDL)
         save_raw(conn, week, payload)
     logger.info("tdcc_shareholding %s 寫入完成，%d 筆", week, len(payload["data"]))
 
