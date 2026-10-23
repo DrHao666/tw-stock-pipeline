@@ -60,3 +60,8 @@ sources:
         columns:
           - name: data_date
             tests: [unique, not_null]
+      - name: twse_isin
+        description: 證交所 ISIN 清單解析結果（上市＋上櫃，不含權證），每天一筆快照；只從開始抓的那天往後累積
+        columns:
+          - name: snapshot_date
+            tests: [unique, not_null]

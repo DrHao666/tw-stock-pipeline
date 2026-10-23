@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: dim_stock
+    description: >
+      股票維度表（SCD Type 2），一檔一個版本一列；期間為 [valid_from, valid_to)。
+      名稱、市場取自每日行情，證券類別、產業別取自 ISIN 快照（快照開始前用第一份補）。
+      3 年內下市的股票保留，is_delisted = true，證券類別、產業別為 NULL。
+    columns:
+      - name: stock_sk
+        description: 代理鍵，md5(stock_id | valid_from)
+        data_tests: [unique, not_null]
+      - name: stock_id
+        data_tests:
+          - not_null
+          - unique:
+              config:
+                where: "is_current"
+      - name: valid_from
+        data_tests: [not_null]
+      - name: valid_to
+        data_tests: [not_null]
+      - name: market
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['TWSE', 'TPEx']

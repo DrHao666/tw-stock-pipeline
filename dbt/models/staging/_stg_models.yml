@@ -133,3 +133,21 @@ models:
         data_tests: [not_null]
       - name: shares
         data_tests: [not_null]
+  - name: stg_securities
+    description: 證交所 ISIN 清單，每份快照每檔證券一列（不含權證）；產業別只有普通股與創新板有值
+    data_tests:
+      - unique:
+          column_name: "snapshot_date || '-' || stock_id"
+    columns:
+      - name: snapshot_date
+        data_tests: [not_null]
+      - name: stock_id
+        data_tests: [not_null]
+      - name: security_type
+        data_tests: [not_null]
+      - name: market
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['TWSE', 'TPEx']
