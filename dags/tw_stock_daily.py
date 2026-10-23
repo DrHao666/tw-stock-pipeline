@@ -1,8 +1,9 @@
-"""每日收盤後抓取上市、上櫃行情、三大法人買賣超、融資融券與除權息／減資資料，寫入 raw，再用 dbt 轉換與測試。
+"""每日收盤後抓取上市、上櫃行情、三大法人買賣超、融資融券、除權息／減資與集保股權分散表，寫入 raw，再用 dbt 轉換與測試。
 
 - 每天台北時間 18:00 執行，週末、假日也跑：休市日照樣記一筆，交易日曆才不會有缺口。
 - 抓哪一天由 Airflow 的 data interval 決定，不是「今天」；要補某一天，在 UI 重跑那一次即可。
   raw 是 upsert、staging 是以 trade_date 先刪後插的 incremental，重跑不會產生重複。
+- 例外：股權分散表的開放資料只有最新一週，不看 data interval；重跑舊日期補不回當時那週。
 - dbt build 的測試就是品質檢查，任何一個失敗整個 DAG 就會失敗。
 """
 from datetime import timedelta
@@ -68,6 +69,13 @@ with DAG(
         cwd=PROJECT_DIR,
     )
 
+    # 開放資料只有最新一週、更新日不固定，每天抓最新的；同一週重抓只會覆蓋同一筆
+    fetch_shareholding = BashOperator(
+        task_id="fetch_shareholding",
+        bash_command=f"{VENV_BIN}/python -m ingestion.shareholding",
+        cwd=PROJECT_DIR,
+    )
+
     # 當月的除權息與減資公告會陸續增加，每天重抓當月
     fetch_corporate_actions = BashOperator(
         task_id="fetch_corporate_actions",
@@ -93,5 +101,6 @@ with DAG(
         fetch_tpex_institutional,
         fetch_twse_margin,
         fetch_tpex_margin,
+        fetch_shareholding,
         fetch_corporate_actions,
     ] >> dbt_build

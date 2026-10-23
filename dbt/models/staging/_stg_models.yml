@@ -112,3 +112,24 @@ models:
           - accepted_values:
               arguments:
                 values: ['TWSE', 'TPEx']
+  - name: stg_shareholding_distribution
+    description: 集保股權分散表，一週一檔一個持股分級一列，單位為股；分級 1-15 為級距、16 差異數調整、17 合計
+    data_tests:
+      - unique:
+          column_name: "data_date || '-' || stock_id || '-' || level"
+    columns:
+      - name: data_date
+        data_tests: [not_null]
+      - name: stock_id
+        data_tests: [not_null]
+      - name: level
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('tdcc_holding_levels')
+                field: level
+      - name: holders
+        data_tests: [not_null]
+      - name: shares
+        data_tests: [not_null]

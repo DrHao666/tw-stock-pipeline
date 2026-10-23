@@ -55,3 +55,8 @@ sources:
         columns:
           - name: trade_date
             tests: [unique, not_null]
+      - name: tdcc_shareholding
+        description: 集保開放資料股權分散表，每個資料日期（每週）一筆，只從開始抓的那週往後累積
+        columns:
+          - name: data_date
+            tests: [unique, not_null]

@@ -5,6 +5,7 @@ profile: tw_stock
 
 model-paths: ["models"]
 macro-paths: ["macros"]
+seed-paths: ["seeds"]
 test-paths: ["tests"]
 
 models:
@@ -12,3 +13,14 @@ models:
     staging:
       +schema: staging
       +materialized: view
+
+seeds:
+  tw_stock:
+    +schema: staging
+    tdcc_holding_levels:
+      +column_types:
+        level: integer
+        level_type: text
+        label: text
+        min_shares: bigint
+        max_shares: bigint
