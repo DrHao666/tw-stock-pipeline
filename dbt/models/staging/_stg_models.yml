@@ -50,7 +50,7 @@ models:
         data_tests: [not_null]
 
   - name: stg_price_adjustments
-    description: 除權息與減資事件，一列一個事件；factor = 參考價 / 事件前收盤價
+    description: 除權息、減資、變更面額、ETF 分割／反分割事件，一列一個事件；factor = 參考價 / 事件前收盤價（除權息用減除股利參考價）
     data_tests:
       - unique:
           column_name: "event_date || '-' || stock_id || '-' || event_type"
@@ -63,7 +63,7 @@ models:
         data_tests:
           - accepted_values:
               arguments:
-                values: ['ex_rights', 'capital_reduction']
+                values: ['ex_rights', 'capital_reduction', 'par_value_change', 'etf_split', 'etf_reverse_split']
       - name: factor
         data_tests: [not_null]
 

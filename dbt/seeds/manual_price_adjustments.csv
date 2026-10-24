@@ -1,0 +1,2 @@
+event_date,stock_id,market,event_type,prev_close,reference_price,source_note
+2024-11-19,8101,TWSE,capital_reduction,1.90,9.50,"減資 80% 彌補虧損，2024-08-22 停止買賣、2024-11-19 恢復，參考價 9.5；證交所 TWTAUU 沒有這筆。https://www.businesstoday.com.tw/article/category/183008/post/202411290013/"

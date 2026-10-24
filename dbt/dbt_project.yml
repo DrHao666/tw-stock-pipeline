@@ -32,3 +32,12 @@ seeds:
         label: text
         min_shares: bigint
         max_shares: bigint
+    manual_price_adjustments:
+      +column_types:
+        event_date: date
+        stock_id: text
+        market: text
+        event_type: text
+        prev_close: numeric
+        reference_price: numeric
+        source_note: text
