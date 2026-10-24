@@ -64,6 +64,9 @@ models:
           - accepted_values:
               arguments:
                 values: ['ex_rights', 'capital_reduction', 'par_value_change', 'etf_split', 'etf_reverse_split']
+      - name: ex_rights_reference_price
+        description: 除權息參考價（含現金增資稀釋），交易所用來算跌停價；不用於還原，其他事件等於 reference_price
+        data_tests: [not_null]
       - name: factor
         data_tests: [not_null]
 

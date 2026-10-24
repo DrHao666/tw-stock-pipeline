@@ -18,7 +18,8 @@ with twse_ex as (
         coalesce(
             nullif({{ clean_number("rec ->> '減除股利參考價'") }}, 0),
             {{ clean_number("rec ->> '除權息參考價'") }}
-        )                                                 as reference_price
+        )                                                 as reference_price,
+        {{ clean_number("rec ->> '除權息參考價'") }}      as ex_rights_reference_price
     from ({{ event_records('twse_ex_rights') }}) e
 ),
 
@@ -29,6 +30,7 @@ twse_cr as (
         'TWSE',
         'capital_reduction',
         {{ clean_number("rec ->> '停止買賣前收盤價格'") }},
+        {{ clean_number("rec ->> '恢復買賣參考價'") }},
         {{ clean_number("rec ->> '恢復買賣參考價'") }}
     from ({{ event_records('twse_capital_reduction') }}) e
 ),
@@ -40,6 +42,7 @@ twse_pv as (
         'TWSE',
         'par_value_change',
         {{ clean_number("rec ->> '停止買賣前收盤價格'") }},
+        {{ clean_number("rec ->> '恢復買賣參考價'") }},
         {{ clean_number("rec ->> '恢復買賣參考價'") }}
     from ({{ event_records('twse_par_value_change') }}) e
 ),
@@ -52,6 +55,7 @@ twse_split as (
         'TWSE',
         case when rec ->> '分割(反分割)' like '%反分割%' then 'etf_reverse_split' else 'etf_split' end,
         {{ clean_number("rec ->> '停止買賣前收盤價格'") }},
+        {{ clean_number("rec ->> '恢復買賣參考價'") }},
         {{ clean_number("rec ->> '恢復買賣參考價'") }}
     from ({{ event_records('twse_etf_split') }}) e
 ),
@@ -66,7 +70,8 @@ tpex_ex as (
         coalesce(
             nullif({{ clean_number("rec ->> '減除股利參考價'") }}, 0),
             {{ clean_number("rec ->> '除權息參考價'") }}
-        )
+        ),
+        {{ clean_number("rec ->> '除權息參考價'") }}
     from ({{ event_records('tpex_ex_rights') }}) e
 ),
 
@@ -77,6 +82,7 @@ tpex_cr as (
         'TPEx',
         'capital_reduction',
         {{ clean_number("rec ->> '最後交易日之收盤價格'") }},
+        {{ clean_number("rec ->> '減資恢復買賣開始日參考價格'") }},
         {{ clean_number("rec ->> '減資恢復買賣開始日參考價格'") }}
     from ({{ event_records('tpex_capital_reduction') }}) e
 ),
@@ -89,6 +95,7 @@ tpex_pv as (
         'TPEx',
         'par_value_change',
         {{ clean_number("rec ->> '最後交易日之收盤價格'") }},
+        {{ clean_number("rec ->> '恢復買賣開始參考價'") }},
         {{ clean_number("rec ->> '恢復買賣開始參考價'") }}
     from ({{ event_records('tpex_par_value_change') }}) e
 ),
@@ -100,6 +107,7 @@ tpex_split as (
         'TPEx',
         'etf_split',
         {{ clean_number("rec ->> '最後交易日之收盤價格'") }},
+        {{ clean_number("rec ->> '恢復買賣開始參考價'") }},
         {{ clean_number("rec ->> '恢復買賣開始參考價'") }}
     from ({{ event_records('tpex_etf_split') }}) e
 ),
@@ -111,12 +119,13 @@ tpex_reverse_split as (
         'TPEx',
         'etf_reverse_split',
         {{ clean_number("rec ->> '最後交易日之收盤價格'") }},
+        {{ clean_number("rec ->> '恢復買賣開始參考價'") }},
         {{ clean_number("rec ->> '恢復買賣開始參考價'") }}
     from ({{ event_records('tpex_etf_reverse_split') }}) e
 ),
 
 manual as (
-    select event_date, stock_id, market, event_type, prev_close, reference_price
+    select event_date, stock_id, market, event_type, prev_close, reference_price, reference_price
     from {{ ref('manual_price_adjustments') }}
 ),
 
@@ -140,6 +149,8 @@ select
     event_type,
     prev_close,
     reference_price,
+    -- 除權息表的「除權息參考價」（含現金增資稀釋）；交易所用它算跌停價，其他事件等於 reference_price
+    coalesce(ex_rights_reference_price, reference_price) as ex_rights_reference_price,
     reference_price / prev_close as factor
 from events
 -- 價格缺漏的事件算不出係數，排除（櫃買中心無資料時用 '0.00'）
