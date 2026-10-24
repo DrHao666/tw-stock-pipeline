@@ -9,7 +9,8 @@ seed-paths: ["seeds"]
 test-paths: ["tests"]
 
 vars:
-  # 3 年回補的起始日；marts 只用這天之後的資料（更早的只有測試時抓的零星日期）
+  # Start of the 3-year backfill; marts only use data from this date on (earlier rows are test samples).
+  # Keep this file ASCII-only: dbt on Windows reads dbt_project.yml with the system codepage (cp950).
   history_start_date: "2023-10-19"
 
 models:

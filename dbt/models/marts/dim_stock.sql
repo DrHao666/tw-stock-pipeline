@@ -1,12 +1,19 @@
 -- 股票維度表（SCD Type 2）：一檔一個版本一列，名稱、市場、證券類別、產業別任一項變了就開新版本
 -- ISIN 清單只有「目前」，歷史從每日行情推：
 --   1. 回補起始日之後每檔每個交易日，名稱、市場取自當天行情；證券類別、產業別取當天以前最近一份 ISIN 快照
---      （快照開始抓之前的日期用第一份快照補，所以早期的產業別是「目前」的產業別）
+--      （快照開始抓之前的日期用第一份快照補，所以早期的產業別是「目前」的產業別；
+--       已下市的股票如果曾出現在快照裡，會沿用最後一次看到的類別與產業別）
 --   2. gaps-and-islands：屬性和前一個交易日不同就開新版本，連續相同的日期合成一個版本
 -- 期間是左閉右開 [valid_from, valid_to)；下一個版本的 valid_from 就是上一個的 valid_to，不會有空檔
 -- 3 年內下市的股票 ISIN 查不到：仍保留，證券類別、產業別為 NULL，is_delisted = true，最後一版到最後交易日隔天為止
 
-{{ config(materialized='table', indexes=[{'columns': ['stock_id']}]) }}
+-- 要排序約 160 萬筆行情；預設 work_mem（4MB）會把排序寫到暫存檔，在 Windows 的 Docker Desktop 上特別慢
+-- set local 只在這個 model 的交易內有效，不影響其他 model
+{{ config(
+    materialized='table',
+    indexes=[{'columns': ['stock_id']}],
+    pre_hook="set local work_mem = '256MB'"
+) }}
 
 with quotes as (
     select trade_date, stock_id, stock_name, market
@@ -14,13 +21,42 @@ with quotes as (
     where trade_date >= '{{ var("history_start_date") }}'::date
 ),
 
--- 每份快照涵蓋的期間：[這份的日期, 下一份的日期)；第一份往前延伸到最早
-snapshot_ranges as (
+-- 先把每日 ISIN 快照壓成「每檔的屬性區間」：證券類別、產業別連續相同的快照合成一段
+-- 這樣每筆行情只要用 stock_id 等值 join 到該檔的少數幾段，不會隨快照天數變多而變慢
+snapshot_flagged as (
     select
+        stock_id,
         snapshot_date,
-        case when snapshot_date = min(snapshot_date) over () then '-infinity'::date else snapshot_date end as range_start,
-        coalesce(lead(snapshot_date) over (order by snapshot_date), 'infinity'::date) as range_end
-    from (select distinct snapshot_date from {{ ref('stg_securities') }}) s
+        security_type,
+        industry,
+        case
+            when (security_type, industry) is not distinct from
+                 (lag(security_type) over w, lag(industry) over w)
+            then 0 else 1
+        end as is_new_segment
+    from {{ ref('stg_securities') }}
+    window w as (partition by stock_id order by snapshot_date)
+),
+
+snapshot_segments as (
+    select stock_id, security_type, industry, min(snapshot_date) as segment_start
+    from (
+        select *, sum(is_new_segment) over (partition by stock_id order by snapshot_date) as segment_no
+        from snapshot_flagged
+    ) s
+    group by stock_id, segment_no, security_type, industry
+),
+
+-- 區間左閉右開；第一段往前延伸到最早（快照開始抓之前的日期用第一份快照補），最後一段延伸到最晚
+attribute_ranges as (
+    select
+        stock_id,
+        security_type,
+        industry,
+        case when row_number() over w = 1 then '-infinity'::date else segment_start end as range_start,
+        coalesce(lead(segment_start) over w, 'infinity'::date) as range_end
+    from snapshot_segments
+    window w as (partition by stock_id order by segment_start)
 ),
 
 daily_attributes as (
@@ -29,13 +65,13 @@ daily_attributes as (
         q.stock_id,
         q.stock_name,
         q.market,
-        s.security_type,
-        s.industry
+        a.security_type,
+        a.industry
     from quotes q
-    left join snapshot_ranges r
-        on q.trade_date >= r.range_start and q.trade_date < r.range_end
-    left join {{ ref('stg_securities') }} s
-        on s.snapshot_date = r.snapshot_date and s.stock_id = q.stock_id
+    left join attribute_ranges a
+        on a.stock_id = q.stock_id
+       and q.trade_date >= a.range_start
+       and q.trade_date < a.range_end
 ),
 
 flagged as (
