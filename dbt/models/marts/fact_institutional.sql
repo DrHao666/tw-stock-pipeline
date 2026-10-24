@@ -39,7 +39,9 @@ join {{ ref('dim_stock') }} d
    and i.trade_date < d.valid_to
 where i.trade_date >= '{{ var("history_start_date") }}'::date
 {% if is_incremental() %}
-  and i.fetched_at > (
-      select coalesce(max(f.fetched_at), '-infinity') from {{ this }} f where f.market = i.market
+  -- 每個市場各自比對；子查詢不能引用外層欄位（寫成 f.market = i.market 會變成每列重查一次，慢到幾十分鐘）
+  and (
+      (i.market = 'TWSE' and i.fetched_at > (select coalesce(max(fetched_at), '-infinity') from {{ this }} where market = 'TWSE'))
+      or (i.market = 'TPEx' and i.fetched_at > (select coalesce(max(fetched_at), '-infinity') from {{ this }} where market = 'TPEx'))
   )
 {% endif %}
