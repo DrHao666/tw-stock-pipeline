@@ -5,10 +5,11 @@ models:
     description: >
       股票維度表（SCD Type 2），一檔一個版本一列；期間為 [valid_from, valid_to)。
       名稱、市場取自每日行情，證券類別、產業別取自 ISIN 快照（快照開始前用第一份補）。
+      第一版從回補起始日開始；已下市股票的最後一版延到融資融券／三大法人最後出現那天的隔天。
       3 年內下市的股票保留，is_delisted = true，證券類別、產業別為 NULL。
     columns:
       - name: stock_sk
-        description: 代理鍵，md5(stock_id | valid_from)
+        description: 代理鍵，md5(stock_id | 版本第一筆成交日)；期間延伸不會改變它
         data_tests: [unique, not_null]
       - name: stock_id
         data_tests:

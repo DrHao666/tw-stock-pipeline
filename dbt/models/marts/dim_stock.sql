@@ -5,7 +5,9 @@
 --       已下市的股票如果曾出現在快照裡，會沿用最後一次看到的類別與產業別）
 --   2. gaps-and-islands：屬性和前一個交易日不同就開新版本，連續相同的日期合成一個版本
 -- 期間是左閉右開 [valid_from, valid_to)；下一個版本的 valid_from 就是上一個的 valid_to，不會有空檔
--- 3 年內下市的股票 ISIN 查不到：仍保留，證券類別、產業別為 NULL，is_delisted = true，最後一版到最後交易日隔天為止
+-- 期間邊界會延伸到沒有行情的日子，讓融資融券等 fact 表也對得到版本：
+--   第一版從回補起始日開始；已下市股票的最後一版到融資融券／三大法人最後出現那天的隔天為止
+-- 3 年內下市的股票 ISIN 查不到：仍保留，is_delisted = true
 
 -- 要排序約 160 萬筆行情；預設 work_mem（4MB）會把排序寫到暫存檔，在 Windows 的 Docker Desktop 上特別慢
 -- set local 只在這個 model 的交易內有效，不影響其他 model
@@ -112,6 +114,17 @@ latest_snapshot as (
     where snapshot_date = (select max(snapshot_date) from {{ ref('stg_securities') }})
 ),
 
+-- 已下市股票在最後一筆成交之後，融資融券、三大法人表可能還會列一段時間（停止買賣到正式下市）
+last_seen as (
+    select stock_id, max(trade_date) as last_seen_date
+    from (
+        select stock_id, trade_date from {{ ref('stg_margin_trades') }}
+        union all
+        select stock_id, trade_date from {{ ref('stg_institutional_trades') }}
+    ) s
+    group by stock_id
+),
+
 final as (
     select
         v.stock_id,
@@ -125,18 +138,26 @@ final as (
         l.listing_date,
         -- 還沒抓過任何 ISIN 快照時無從判斷，一律當作仍掛牌
         l.stock_id is null and exists (select 1 from latest_snapshot) as is_delisted,
-        v.valid_from,
+        v.valid_from as first_trade_date,
+        -- 第一個版本往前延伸到回補起始日：新上市前一兩天、或回補初期停止買賣時，融資融券表已經有資料但還沒有行情
+        case
+            when v.version_no = 1 then least(v.valid_from, '{{ var("history_start_date") }}'::date)
+            else v.valid_from
+        end as valid_from,
         coalesce(
             lead(v.valid_from) over (partition by v.stock_id order by v.valid_from),
+            -- 已下市：最後一版延到任何每日資料最後出現那天的隔天
             case when l.stock_id is null and exists (select 1 from latest_snapshot)
-                 then v.last_trade_date + 1 else '9999-12-31'::date end
+                 then greatest(v.last_trade_date, s.last_seen_date) + 1 else '9999-12-31'::date end
         ) as valid_to
     from versions v
     left join latest_snapshot l on l.stock_id = v.stock_id
+    left join last_seen s on s.stock_id = v.stock_id
 )
 
 select
-    md5(stock_id || '|' || valid_from) as stock_sk,
+    -- 代理鍵用版本「實際第一筆成交日」算，不受上面的期間延伸影響，已經寫進 fact 表的 key 才不會變
+    md5(stock_id || '|' || first_trade_date) as stock_sk,
     stock_id,
     version_no,
     stock_name,
