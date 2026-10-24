@@ -25,3 +25,93 @@ models:
           - accepted_values:
               arguments:
                 values: ['TWSE', 'TPEx']
+
+  - name: dim_date
+    description: 日期維度，一天一列，從回補起始日到明年底；is_trading_day 取自交易日曆，未抓過的日期為 NULL
+    columns:
+      - name: date_day
+        data_tests: [unique, not_null]
+
+  - name: fact_daily_price
+    description: 每日行情，一天一檔一列；原始與還原 OHLC 並列，每次整張重建
+    data_tests:
+      - unique:
+          column_name: "trade_date || '-' || stock_id"
+    columns:
+      - name: trade_date
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: stock_sk
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_stock')
+                field: stock_sk
+
+  - name: fact_institutional
+    description: 三大法人買賣超，一天一檔一列，單位為股
+    data_tests:
+      - unique:
+          column_name: "trade_date || '-' || stock_id"
+    columns:
+      - name: trade_date
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: stock_sk
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_stock')
+                field: stock_sk
+
+  - name: fact_margin
+    description: 融資融券，一天一檔一列，單位為張
+    data_tests:
+      - unique:
+          column_name: "trade_date || '-' || stock_id"
+    columns:
+      - name: trade_date
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: stock_sk
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_stock')
+                field: stock_sk
+
+  - name: fact_shareholding
+    description: 集保股權分散表，一週一檔一個持股分級一列，單位為股
+    data_tests:
+      - unique:
+          column_name: "data_date || '-' || stock_id || '-' || level"
+    columns:
+      - name: data_date
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: stock_sk
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_stock')
+                field: stock_sk

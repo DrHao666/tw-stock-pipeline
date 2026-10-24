@@ -39,6 +39,8 @@ select
     q.stock_id,
     q.stock_name,
     q.volume_shares,
+    q.trade_count,
+    q.turnover,
     q.open_price,
     q.high_price,
     q.low_price,
