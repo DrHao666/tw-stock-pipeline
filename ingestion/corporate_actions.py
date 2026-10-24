@@ -1,6 +1,6 @@
-"""抓取上市、上櫃的除權息與減資結果表，按月原封不動寫入 raw。
+"""抓取上市、上櫃的除權息、減資、變更面額與 ETF 分割（反分割）結果表，按月原封不動寫入 raw。
 
-四個來源格式不同（日期寫法、千分位、空值符號），清理留給 dbt staging。
+各來源格式不同（日期寫法、千分位、空值符號），清理留給 dbt staging。
 已抓過且抓取時該月已結束的月份會跳過；當月或抓的時候還沒結束的月份一律重抓，
 因為月中還會有新的公告。
 
@@ -36,6 +36,26 @@ SOURCES = {
     },
     "tpex_capital_reduction": {
         "url": "https://www.tpex.org.tw/www/zh-tw/bulletin/revivt",
+        "date_format": "%Y/%m/%d",
+    },
+    "twse_par_value_change": {
+        "url": "https://www.twse.com.tw/rwd/zh/change/TWTB8U",
+        "date_format": "%Y%m%d",
+    },
+    "twse_etf_split": {
+        "url": "https://www.twse.com.tw/rwd/zh/split/TWTCAU",
+        "date_format": "%Y%m%d",
+    },
+    "tpex_par_value_change": {
+        "url": "https://www.tpex.org.tw/www/zh-tw/bulletin/pvChgRslt",
+        "date_format": "%Y/%m/%d",
+    },
+    "tpex_etf_split": {
+        "url": "https://www.tpex.org.tw/www/zh-tw/bulletin/etfSplitRslt",
+        "date_format": "%Y/%m/%d",
+    },
+    "tpex_etf_reverse_split": {
+        "url": "https://www.tpex.org.tw/www/zh-tw/bulletin/etfRvsRslt",
         "date_format": "%Y/%m/%d",
     },
 }
@@ -104,6 +124,7 @@ def run(start: date, end: date) -> list[tuple[str, date]]:
     """抓取區間內缺的月份，回傳失敗清單。"""
     with get_connection() as conn:
         run_sql_file(conn, "raw/003_create_raw_corporate_actions.sql")
+        run_sql_file(conn, "raw/008_create_raw_par_value_and_splits.sql")
         todo = []
         for source in SOURCES:
             done = completed_months(conn, source)

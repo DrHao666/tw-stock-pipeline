@@ -35,6 +35,31 @@ sources:
         columns:
           - name: period_start
             tests: [unique, not_null]
+      - name: twse_par_value_change
+        description: 證交所 TWTB8U 變更股票面額恢復買賣參考價，每月一筆；當月沒有事件時 stat 不是 'OK'
+        columns:
+          - name: period_start
+            tests: [unique, not_null]
+      - name: twse_etf_split
+        description: 證交所 TWTCAU ETF 分割（反分割）恢復買賣參考價，每月一筆
+        columns:
+          - name: period_start
+            tests: [unique, not_null]
+      - name: tpex_par_value_change
+        description: 櫃買中心 pvChgRslt 變更股票面額恢復買賣參考價，每月一筆
+        columns:
+          - name: period_start
+            tests: [unique, not_null]
+      - name: tpex_etf_split
+        description: 櫃買中心 etfSplitRslt ETF 分割恢復買賣參考價，每月一筆
+        columns:
+          - name: period_start
+            tests: [unique, not_null]
+      - name: tpex_etf_reverse_split
+        description: 櫃買中心 etfRvsRslt ETF 反分割恢復買賣參考價，每月一筆
+        columns:
+          - name: period_start
+            tests: [unique, not_null]
       - name: twse_t86
         description: 證交所 T86 三大法人買賣超日報，每個日期一筆；休市日 stat 不是 'OK'、沒有 data
         columns:
