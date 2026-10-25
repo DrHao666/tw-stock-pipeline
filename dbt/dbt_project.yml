@@ -5,7 +5,7 @@ profile: tw_stock
 
 model-paths: ["models"]
 macro-paths: ["macros"]
-seed-paths: ["seeds"]
+seed-paths: ["seeds", "../config"]
 test-paths: ["tests"]
 
 vars:
@@ -32,6 +32,11 @@ seeds:
         label: text
         min_shares: bigint
         max_shares: bigint
+    signal_thresholds:
+      +column_types:
+        name: text
+        value: numeric
+        description: text
     manual_price_adjustments:
       +column_types:
         event_date: date

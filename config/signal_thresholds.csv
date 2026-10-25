@@ -1,0 +1,6 @@
+name,value,description
+long_body_pct,0.02,長紅／長黑：實體（收盤與開盤差）至少是開盤價的 2%
+small_body_pct,0.005,小實體（星線）：實體不超過開盤價的 0.5%
+soldier_body_pct,0.01,紅三兵每一根紅 K 的實體至少是開盤價的 1%
+breakout_volume_multiple,1.5,向上突破時成交量至少是前一天 20 日均量的幾倍
+range_width_pct,0.10,區間整理：20 日最高與最低價差不超過收盤價的 10%

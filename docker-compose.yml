@@ -35,6 +35,8 @@ x-airflow-common: &airflow-common
     - ./ingestion:/opt/airflow/project/ingestion
     - ./sql:/opt/airflow/project/sql
     - ./dbt:/opt/airflow/project/dbt
+    # config/ 的門檻 CSV 是 dbt seed（seed-paths 指到 ../config）
+    - ./config:/opt/airflow/project/config
   depends_on:
     postgres:
       condition: service_healthy
