@@ -1,0 +1,2 @@
+name,value,description
+round_trip_cost,0.00585,一買一賣的交易成本占成交金額比例：手續費 0.1425% × 2 + 證交稅 0.3%

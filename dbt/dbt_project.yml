@@ -32,6 +32,11 @@ seeds:
         label: text
         min_shares: bigint
         max_shares: bigint
+    backtest_settings:
+      +column_types:
+        name: text
+        value: numeric
+        description: text
     signal_thresholds:
       +column_types:
         name: text
