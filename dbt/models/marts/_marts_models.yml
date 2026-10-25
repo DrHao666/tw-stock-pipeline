@@ -164,3 +164,35 @@ models:
           - accepted_values:
               arguments:
                 values: ['breakout', 'pullback', 'range', 'none']
+
+  - name: forward_returns
+    description: 每檔每天的未來報酬（隔天開盤買進，持有 5、20 個有成交日收盤賣出，還原價），只含個股；最近的日子為 NULL
+    data_tests:
+      - unique:
+          column_name: "trade_date || '-' || stock_id"
+    columns:
+      - name: stock_sk
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_stock')
+                field: stock_sk
+
+  - name: backtest_results
+    description: 回測結果，每種訊號 × 持有天數一列；基準為所有股票所有日子的平均報酬，超額報酬扣除同日平均
+    data_tests:
+      - unique:
+          column_name: "signal || '-' || horizon_days"
+    columns:
+      - name: signal
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['three_white_soldiers', 'evening_star', 'dark_cloud_cover', 'breakout', 'pullback']
+      - name: horizon_days
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [5, 20]
