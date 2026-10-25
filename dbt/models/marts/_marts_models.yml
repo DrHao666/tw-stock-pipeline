@@ -116,3 +116,25 @@ models:
               arguments:
                 to: ref('dim_stock')
                 field: stock_sk
+
+  - name: indicators
+    description: 技術指標，一天一檔一列（只含有成交的日子）；均線、均量、N 日高低都用還原價與還原成交量，視窗資料不足 N 天時為 NULL
+    data_tests:
+      - unique:
+          column_name: "trade_date || '-' || stock_id"
+    columns:
+      - name: trade_date
+        data_tests: [not_null]
+      - name: stock_sk
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_stock')
+                field: stock_sk
+      - name: ma5
+        description: 最近 5 個有成交日的還原收盤均價
+      - name: vol_ma5
+        description: 最近 5 個有成交日的還原成交股數均量
+      - name: high_20
+        description: 最近 20 個有成交日的還原最高價
