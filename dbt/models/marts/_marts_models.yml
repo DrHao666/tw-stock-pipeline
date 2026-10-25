@@ -138,3 +138,29 @@ models:
         description: 最近 5 個有成交日的還原成交股數均量
       - name: high_20
         description: 最近 20 個有成交日的還原最高價
+
+  - name: signals
+    description: K 線型態（紅三兵、黃昏之星、烏雲蓋頂）與趨勢狀態，一天一檔一列，和 indicators 同樣只含有成交的日子；門檻見 config/signal_thresholds.csv
+    data_tests:
+      - unique:
+          column_name: "trade_date || '-' || stock_id"
+    columns:
+      - name: stock_sk
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_stock')
+                field: stock_sk
+      - name: three_white_soldiers
+        data_tests: [not_null]
+      - name: evening_star
+        data_tests: [not_null]
+      - name: dark_cloud_cover
+        data_tests: [not_null]
+      - name: trend_state
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['breakout', 'pullback', 'range', 'none']
