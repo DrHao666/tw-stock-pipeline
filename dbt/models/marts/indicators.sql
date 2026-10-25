@@ -3,6 +3,9 @@
 -- 只用有成交的日子：沒成交的日子沒有收盤價，不算進視窗，所以 MA5 = 最近 5 個「有成交」的交易日
 -- 視窗內資料不足 N 天時給 NULL，不拿較少天數硬算（例如新上市第 3 天沒有 MA5）
 -- 新的除權息事件會改變過去的還原價，所以和 fact_daily_price 一樣整張重建
+-- 160 萬列依股票、日期排序做 window，預設 work_mem 不夠會排序溢出到磁碟，調大只影響這個 transaction
+
+{{ config(pre_hook="set local work_mem = '256MB'") }}
 
 with priced as (
     select
