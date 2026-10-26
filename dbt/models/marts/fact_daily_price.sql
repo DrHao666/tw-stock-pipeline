@@ -2,6 +2,9 @@
 -- 新的除權息／減資事件會改變過去所有日期的還原價，所以整張重建，不做 incremental
 -- stock_sk：用交易日對到 dim_stock 當天有效的版本；對不到的代號不收
 
+-- 依股票、日期建索引：Dashboard 查單一檔的歷史、查某檔某天的前一個交易日都靠它，沒有索引要掃整張表
+{{ config(indexes=[{'columns': ['stock_id', 'trade_date']}]) }}
+
 select
     q.trade_date,
     d.stock_sk,

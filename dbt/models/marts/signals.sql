@@ -3,7 +3,11 @@
 -- 門檻放在 config/signal_thresholds.csv（dbt seed），調參數不用改 SQL
 -- 依賴的還原價會隨新事件改變，所以整張重建
 
-{{ config(pre_hook="set local work_mem = '256MB'") }}
+-- 索引：Dashboard 查「某一天」所有訊號、查「某一檔」近期訊號
+{{ config(
+    pre_hook="set local work_mem = '256MB'",
+    indexes=[{'columns': ['trade_date']}, {'columns': ['stock_id', 'trade_date']}]
+) }}
 
 with thresholds as (
     -- 設定檔是一列一個參數，轉成一列多欄方便 cross join

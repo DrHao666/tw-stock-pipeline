@@ -5,7 +5,11 @@
 -- 新的除權息事件會改變過去的還原價，所以和 fact_daily_price 一樣整張重建
 -- 160 萬列依股票、日期排序做 window，預設 work_mem 不夠會排序溢出到磁碟，調大只影響這個 transaction
 
-{{ config(pre_hook="set local work_mem = '256MB'") }}
+-- 依股票、日期建索引：Dashboard 畫單一檔 K 線時用
+{{ config(
+    pre_hook="set local work_mem = '256MB'",
+    indexes=[{'columns': ['stock_id', 'trade_date']}]
+) }}
 
 with priced as (
     select
