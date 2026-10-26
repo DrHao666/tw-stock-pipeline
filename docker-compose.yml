@@ -119,8 +119,9 @@ services:
       STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
       STREAMLIT_CLIENT_TOOLBAR_MODE: viewer
       STREAMLIT_SERVER_RUN_ON_SAVE: "true"
+    # 只綁本機：個人工具，同一個網路的其他裝置連不到
     ports:
-      - "8501:8501"
+      - "127.0.0.1:8501:8501"
     volumes:
       - ./app:/app
     depends_on:
