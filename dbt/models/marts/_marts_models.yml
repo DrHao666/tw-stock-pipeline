@@ -196,3 +196,13 @@ models:
           - accepted_values:
               arguments:
                 values: [5, 20]
+
+  - name: stock_summary
+    description: 個股摘要，一檔一列（dim_stock 目前版本），最後一個有成交日的價格、指標、趨勢，近 5 個有成交日的訊號與每種訊號最近一次出現的日期；Dashboard 直接查這張
+    columns:
+      - name: stock_id
+        data_tests: [unique, not_null]
+      - name: last_trade_date
+        data_tests: [not_null]
+      - name: is_common_stock
+        data_tests: [not_null]
