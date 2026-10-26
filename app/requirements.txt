@@ -1,0 +1,6 @@
+# Dashboard 用的套件，和 ingestion / dbt 分開，Docker image 只裝這些
+streamlit==1.62.0
+plotly==6.9.0
+pandas==2.3.3
+psycopg2-binary==2.9.11
+python-dotenv==1.2.1

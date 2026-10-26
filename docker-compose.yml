@@ -104,5 +104,29 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  # 個人用的 Dashboard，瀏覽器開 http://localhost:8501；只讀 marts，不寫資料
+  dashboard:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    image: tw-stock-dashboard:1.0
+    environment:
+      WAREHOUSE_HOST: postgres
+      WAREHOUSE_PORT: "5432"
+      WAREHOUSE_DB: ${WAREHOUSE_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
+      STREAMLIT_CLIENT_TOOLBAR_MODE: viewer
+      STREAMLIT_SERVER_RUN_ON_SAVE: "true"
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./app:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pgdata:
